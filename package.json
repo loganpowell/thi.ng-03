@@ -1,0 +1,29 @@
+{
+  "name": "03",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rm -rf .cache build out",
+    "build": "yarn clean && parcel build index.html -d out --no-source-maps --no-cache --experimental-scope-hoisting --detailed-report --public-url ./",
+    "start": "parcel index.html -p 8080 --open"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@thi.ng/csp": "^1.1.6",
+    "@thi.ng/rstream": "^2.5.6",
+    "@thi.ng/rstream-csp": "^1.0.33",
+    "@thi.ng/transducers-hdom": "^2.0.31",
+    "node-fetch": "^2.6.0"
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "printWidth": 100,
+    "bracketSpacing": true,
+    "semi": false,
+    "tabWidth": 2,
+    "trailingComma": "none"
+  }
+}
