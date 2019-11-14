@@ -5,6 +5,7 @@ import * as cx from "@thi.ng/checks"
 import { Atom, Cursor } from "@thi.ng/atom"
 import { Channel } from "@thi.ng/csp"
 import { fromChannel } from "@thi.ng/rstream-csp"
+import * as pa from "@thi.ng/paths"
 import fetch from "node-fetch"
 
 //  888                        ,e,
@@ -93,7 +94,7 @@ cursor.reset(42)
 ex_atom.deref()
 //=> { a: 42, b: 88 }
 
-//  ,e,
+//                                          ,e,
 //  888-~88e  888-~\  e88~-_  888-~88e-~88e  "   d88~\  e88~~8e
 //  888  888b 888    d888   i 888  888  888 888 C888   d888  88b
 //  888  8888 888    8888   | 888  888  888 888  Y88b  8888__888
@@ -101,10 +102,10 @@ ex_atom.deref()
 //  888-_88"  888     "88_-~  888  888  888 888 \_88P   "88___/
 //  888
 
-let URL = "https://jsonplaceholder.typicode.com/todos/1"
-let promise = fetch(URL).then(r => r.text())
+let todos_URL = "https://jsonplaceholder.typicode.com/todos/1"
+let promise_ex = fetch(todos_URL).then(r => r.json())
 
-let ex_promise = rs.fromPromise(promise).subscribe(rs.trace("ex_promise:"))
+let ex_promise = rs.fromPromise(promise_ex).subscribe(rs.trace("ex_promise:"))
 /* trace logs:
 ex_promise: { 
   "userId": 1, 
@@ -150,6 +151,8 @@ ex_chan.subscribe(
 //  \_88P    /     888  888  "88__/
 //         _/
 
+// source: https://github.com/thi-ng/umbrella/blob/master/packages/rstream/src/stream-sync.ts#L20
+
 let ex_sync1 = rs.stream()
 let ex_sync2 = rs.stream()
 ex_sync1.id //=> 'stream-13'
@@ -175,6 +178,8 @@ ex_sync3.next(5)
 
 // UNDER THE HOOD START /////////////////////////////////////
 
+// source: https://github.com/thi-ng/umbrella/blob/master/packages/transducers/src/xform/partition-sync.ts
+
 // reset behavior: partitionSync transducer (upon which `rs.sync` is built):
 let ex_UTH = [
   ["a", 1],
@@ -185,17 +190,21 @@ let ex_UTH = [
   ["c", 0],
   ["a", 3]
 ]
-// reset: false = default for rs.sync(), any new value forces emission of *all* latest vals
-let ex_UTH_reset_rst = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: false }, ex_UTH)]
+
+// reset: false (default for rs.sync()) = any new value forces emission of *all* latest vals
+let ex_UTH_reset_false = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: false }, ex_UTH)]
 //=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] }, { a: [ 'a', 3 ], c: [ 'c', 0 ] } ]
+
 // reset: true = previous vals are shed
-let ex_UTH_reset = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: true }, ex_UTH)]
+let ex_UTH_reset_true = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: true }, ex_UTH)]
 //=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] }, { a: [ 'a', 3 ] } ]
+
 // all: false = only allow complete tuples
-let ex_UTH_reset_all = [...xf.partitionSync(["a", "c"], { key: x => x[0], all: false }, ex_UTH)]
+let ex_UTH_all_true = [...xf.partitionSync(["a", "c"], { key: x => x[0], all: false }, ex_UTH)]
 //=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] } ]
+
 // mergeOnly: true = synchrony no longer enforced, effectively ~ rs.merge()
-let ex_UTH_reset_mrg = [
+let ex_UTH_mergeOnly_true = [
   ...xf.partitionSync(["a", "c"], { key: x => x[0], mergeOnly: true }, ex_UTH)
 ]
 //=> [ { a: [ 'a', 1 ] }, { a: [ 'a', 2 ] }, { c: [ 'c', 0 ] }, { a: [ 'a', 3 ] } ]
@@ -214,3 +223,75 @@ ex_sync_src_arr.deref() //=> { 'stream-13': 1, 'stream-14': 3 }
 ex_sync2.done()
 ex_sync_src_arr.deref() //=> undefined
 ex_sync_close_false.deref() //=> { ex_sync1: 1, ex_sync3: 5 }
+
+//                     888       ,d88~~\          888
+//  888-~88e  888  888 888-~88e  8888    888  888 888-~88e
+//  888  888b 888  888 888  888b `Y88b   888  888 888  888b
+//  888  8888 888  888 888  8888  `Y88b, 888  888 888  8888
+//  888  888P 888  888 888  888P    8888 888  888 888  888P
+//  888-_88"  "88_-888 888-_88"  \__88P' "88_-888 888-_88"
+//  888
+
+// source: https://github.com/thi-ng/umbrella/blob/master/packages/rstream/test/pubsub.ts
+
+let ex_pub_01 = rs.pubsub({
+  // topic = test decides what the topic is
+  topic: x => Object.keys(x)[0],
+  id: "ex_pub_01"
+})
+
+// dynamic pubsub subscription (ad-hoc attachment)
+// simple sub (input)
+let ex_pubsub_basic = ex_pub_01.subscribeTopic("_fetch", rs.trace("ex_pubsub_basic"), "bloop")
+
+ex_pub_01.next({ _fetch: "noop" })
+//=> ex_pubsub_basic { fetch: 'noop' }
+
+let fetch_handler = x =>
+  fetch(x)
+    .then(r => r.json())
+    .catch(e => `error for _fetch opts: ${x} = ${e.message}`)
+
+// green TODO: connect to sidechain (instead of rs.trace())
+let ex_pubsub_fetch_handler = ({ _fetch }) =>
+  rs.fromPromise(fetch_handler(_fetch)).subscribe(rs.trace("ex_pubsub_fetch_handler:"))
+
+// dispatch to another stream based on topic (output)
+let ex_pubsub_ad_hoc = ex_pub_01.subscribeTopic("_fetch", xf.map(ex_pubsub_fetch_handler))
+
+let pub_URL = "https://jsonplaceholder.typicode.com/users/1"
+ex_pub_01.next({ _fetch: pub_URL })
+/* trace logs:
+ex_pubsub_fetch_handler: error for _fetch opts: noop = Only absolute URLs are supported 
+
+ex_pubsub_fetch_handler: done 
+
+ex_pubsub_fetch_handler: { id: 1, 
+  name: 'Leanne Graham', 
+  username: 'Bret', 
+  email: 'Sincere@april.biz', 
+  address:  
+   { street: 'Kulas Light', 
+     suite: 'Apt. 556', 
+     city: 'Gwenborough', 
+     zipcode: '92998-3874', 
+     geo: { lat: '-37.3159', lng: '81.1496' } }, 
+  phone: '1-770-736-8031 x56442', 
+  website: 'hildegard.org', 
+  company:  
+   { name: 'Romaguera-Crona', 
+     catchPhrase: 'Multi-layered client-server neural-net', 
+     bs: 'harness real-time e-markets' } } 
+ 
+ex_pubsub_fetch_handler: done 
+*/
+// latest values are deref()able
+ex_pubsub_basic.deref()
+//=> { _fetch: 'https://jsonplaceholder.typicode.com/users/1' }
+
+//         ,e,       888                   888                ,e,
+//   d88~\  "   e88~\888  e88~~8e   e88~~\ 888-~88e   /~~~8e   "  888-~88e
+//  C888   888 d888  888 d888  88b d888    888  888       88b 888 888  888
+//   Y88b  888 8888  888 8888__888 8888    888  888  e88~-888 888 888  888
+//    888D 888 Y888  888 Y888    , Y888    888  888 C888  888 888 888  888
+//  \_88P  888  "88_/888  "88___/   "88__/ 888  888  "88_-888 888 888  888
