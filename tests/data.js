@@ -5,7 +5,6 @@ import * as cx from "@thi.ng/checks"
 import { Atom, Cursor } from "@thi.ng/atom"
 import { Channel } from "@thi.ng/csp"
 import { fromChannel } from "@thi.ng/rstream-csp"
-import * as pa from "@thi.ng/paths"
 import fetch from "node-fetch"
 
 //  888                        ,e,
@@ -252,7 +251,7 @@ let fetch_handler = x =>
     .then(r => r.json())
     .catch(e => `error for _fetch opts: ${x} = ${e.message}`)
 
-// green TODO: connect to sidechain (instead of rs.trace())
+// 📌 TODO: connect to sidechain (instead of rs.trace())
 let ex_pubsub_fetch_handler = ({ _fetch }) =>
   rs.fromPromise(fetch_handler(_fetch)).subscribe(rs.trace("ex_pubsub_fetch_handler:"))
 
@@ -295,3 +294,25 @@ ex_pubsub_basic.deref()
 //   Y88b  888 8888  888 8888__888 8888    888  888  e88~-888 888 888  888
 //    888D 888 Y888  888 Y888    , Y888    888  888 C888  888 888 888  888
 //  \_88P  888  "88_/888  "88___/   "88__/ 888  888  "88_-888 888 888  888
+
+let ex_pub_sidechain = rs.stream()
+let ex_pub_sidechain_trigger = rs.stream()
+
+// basic sidechain (sidechain vals are ignored and only used for trigger)
+ex_pub_sidechain
+  .subscribe(rs.sidechainPartition(ex_pub_sidechain_trigger))
+  .subscribe(rs.trace("ex_pub_sidechain"))
+
+ex_pub_sidechain.next({ hi: "I was first" })
+ex_pub_sidechain.next({ hi: "I was second" })
+ex_pub_sidechain.next({ hi: "I was third" })
+//=> no trace... waiting for trigger
+ex_pub_sidechain.deref() //=> { hi: 'I was third' }
+ex_pub_sidechain_trigger.next(0)
+//=> ex_pub_sidechain [ { hi: 'I was first' }, { hi: 'I was second' }, { hi: 'I was third' } ]
+ex_pub_sidechain_trigger.next(1)
+//=> no trace... no vals from source
+ex_pub_sidechain.next({ hi: "I was forth" })
+// => no trace... trigger (1) happened before forth and fifth
+ex_pub_sidechain_trigger.next(2)
+// => ex_pub_sidechain [ { hi: 'I was forth' } ]
