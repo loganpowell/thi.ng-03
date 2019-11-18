@@ -1,4 +1,3 @@
-/* eslint-disable no-irregular-whitespace */
 import * as rs from "@thi.ng/rstream"
 import * as xf from "@thi.ng/transducers"
 import * as cx from "@thi.ng/checks"
@@ -26,9 +25,9 @@ let ex1 = rs.stream(ex_seed)
 // create a single subscription
 ex1.subscribe(rs.trace("ex_seed_sub:"))
 /* trace logs:
-ex_seed_sub: starting ex_seed... 
+ex_seed_sub: starting ex_seed...
 
-ex_seed_sub: done ​​​​​
+ex_seed_sub: done
 */
 
 // only the first subscriber will succeed if the stream is done()
@@ -42,9 +41,9 @@ let ex_basic_sub2 = ex_basic.subscribe(rs.trace("ex_basic_sub2"))
 // provoke from "outside"
 ex_basic.next("starting ex_basic...")
 /* trace logs (notice order):
-ex_basic_sub2 starting ex_basic... 
- 
-ex_basic_sub1 starting ex_basic... 
+ex_basic_sub2 starting ex_basic...
+
+ex_basic_sub1 starting ex_basic...
 */
 
 // stream()s are also subscriptions
@@ -69,9 +68,9 @@ ex_basic_xf.deref()
 //=> characters = 15
 ex_basic.done()
 /* trace logs:
-ex_basic_sub1 done ​​​​​
+ex_basic_sub1 done
 
-ex_basic_sub2 done ​​​​​
+ex_basic_sub2 done
 */
 
 //              d8
@@ -104,16 +103,16 @@ ex_atom.deref()
 let todos_URL = "https://jsonplaceholder.typicode.com/todos/1"
 let promise_ex = fetch(todos_URL).then(r => r.json())
 
-let ex_promise = rs.fromPromise(promise_ex).subscribe(rs.trace("ex_promise:"))
+rs.fromPromise(promise_ex).subscribe(rs.trace("ex_promise:"))
 /* trace logs:
-ex_promise: { 
-  "userId": 1, 
-  "id": 1, 
-  "title": "delectus aut autem", 
-  "completed": false 
-} 
+ex_promise: {
+  "userId": 1,
+  "id": 1,
+  "title": "delectus aut autem",
+  "completed": false
+}
 
-ex_promise: done ​​​​​
+ex_promise: done
 */
 
 //          888
@@ -130,11 +129,11 @@ ex_chan.subscribe(rs.trace("ex_chan:"))
 ex_chan.subscribe(rs.trace("ex_chan evens:"), xf.filter(cx.isEven))
 
 ch.write(1)
-//=> ex_chan: 1 ​​​
+//=> ex_chan: 1
 
 ch.write(2)
-//=> ex_chan evens: 2 ​​​​​
-//=> ex_chan: 2 ​​​​​
+//=> ex_chan evens: 2​​
+//=> ex_chan: 2​​
 
 ex_chan.subscribe(
   rs.trace("ex_chan x 10:"),
@@ -168,9 +167,7 @@ ex_sync2.next(3)
 let ex_sync3 = rs.stream()
 var xform = xf.map(x => `xform -> ${JSON.stringify(x)}`)
 // if src is defined as an object, its keys will be used instead of the stream ID
-let ex_sync_src_obj_xf = rs
-  .sync({ src: { ex_sync1, ex_sync3 }, xform })
-  .subscribe(rs.trace("ex_sync_src_obj_xf:"))
+rs.sync({ src: { ex_sync1, ex_sync3 }, xform }).subscribe(rs.trace("ex_sync_src_obj_xf:"))
 //=> ex_sync_src_obj_xf: xform -> { "ex_sync1": 1, "ex_sync3": 5 }
 // provoke sync
 ex_sync3.next(5)
@@ -191,22 +188,24 @@ let ex_UTH = [
 ]
 
 // reset: false (default for rs.sync()) = any new value forces emission of *all* latest vals
-let ex_UTH_reset_false = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: false }, ex_UTH)]
-//=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] }, { a: [ 'a', 3 ], c: [ 'c', 0 ] } ]
+let sync_UTH_reset_false = [
+  ...xf.partitionSync(["a", "c"], { key: x => x[0], reset: false }, ex_UTH)
+]
+//=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] }, { a: [ 'a', 3 ], c: [ 'c', 0 ] } ]
 
 // reset: true = previous vals are shed
-let ex_UTH_reset_true = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: true }, ex_UTH)]
+let sync_UTH_reset_true = [...xf.partitionSync(["a", "c"], { key: x => x[0], reset: true }, ex_UTH)]
 //=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] }, { a: [ 'a', 3 ] } ]
 
 // all: false = only allow complete tuples
-let ex_UTH_all_true = [...xf.partitionSync(["a", "c"], { key: x => x[0], all: false }, ex_UTH)]
+let sync_UTH_all_true = [...xf.partitionSync(["a", "c"], { key: x => x[0], all: false }, ex_UTH)]
 //=> [ { a: [ 'a', 2 ], c: [ 'c', 0 ] } ]
 
 // mergeOnly: true = synchrony no longer enforced, effectively ~ rs.merge()
-let ex_UTH_mergeOnly_true = [
+let sync_UTH_mergeOnly_true = [
   ...xf.partitionSync(["a", "c"], { key: x => x[0], mergeOnly: true }, ex_UTH)
 ]
-//=> [ { a: [ 'a', 1 ] }, { a: [ 'a', 2 ] }, { c: [ 'c', 0 ] }, { a: [ 'a', 3 ] } ]
+//=> [ { a: [ 'a', 1 ] }, { a: [ 'a', 2 ] }, { c: [ 'c', 0 ] }, { a: [ 'a', 3 ] } ]
 
 // UNDER THE HOOD END /////////////////////////////////////
 
@@ -256,33 +255,33 @@ let ex_pubsub_fetch_handler = ({ _fetch }) =>
   rs.fromPromise(fetch_handler(_fetch)).subscribe(rs.trace("ex_pubsub_fetch_handler:"))
 
 // dispatch to another stream based on topic (output)
-let ex_pubsub_ad_hoc = ex_pub_01.subscribeTopic("_fetch", xf.map(ex_pubsub_fetch_handler))
+ex_pub_01.subscribeTopic("_fetch", xf.map(ex_pubsub_fetch_handler))
 
 let pub_URL = "https://jsonplaceholder.typicode.com/users/1"
 ex_pub_01.next({ _fetch: pub_URL })
 /* trace logs:
-ex_pubsub_fetch_handler: error for _fetch opts: noop = Only absolute URLs are supported 
+ex_pubsub_fetch_handler: error for _fetch opts: noop = Only absolute URLs are supported 
 
-ex_pubsub_fetch_handler: done 
+ex_pubsub_fetch_handler: done 
 
-ex_pubsub_fetch_handler: { id: 1, 
-  name: 'Leanne Graham', 
-  username: 'Bret', 
-  email: 'Sincere@april.biz', 
-  address:  
-   { street: 'Kulas Light', 
-     suite: 'Apt. 556', 
-     city: 'Gwenborough', 
-     zipcode: '92998-3874', 
-     geo: { lat: '-37.3159', lng: '81.1496' } }, 
-  phone: '1-770-736-8031 x56442', 
-  website: 'hildegard.org', 
-  company:  
-   { name: 'Romaguera-Crona', 
-     catchPhrase: 'Multi-layered client-server neural-net', 
-     bs: 'harness real-time e-markets' } } 
- 
-ex_pubsub_fetch_handler: done 
+ex_pubsub_fetch_handler: { id: 1, 
+  name: 'Leanne Graham', 
+  username: 'Bret', 
+  email: 'Sincere@april.biz', 
+  address:  
+   { street: 'Kulas Light', 
+     suite: 'Apt. 556', 
+     city: 'Gwenborough', 
+     zipcode: '92998-3874', 
+     geo: { lat: '-37.3159', lng: '81.1496' } }, 
+  phone: '1-770-736-8031 x56442', 
+  website: 'hildegard.org', 
+  company:  
+   { name: 'Romaguera-Crona', 
+     catchPhrase: 'Multi-layered client-server neural-net', 
+     bs: 'harness real-time e-markets' } } 
+ 
+ex_pubsub_fetch_handler: done 
 */
 // latest values are deref()able
 ex_pubsub_basic.deref()
@@ -295,24 +294,24 @@ ex_pubsub_basic.deref()
 //    888D 888 Y888  888 Y888    , Y888    888  888 C888  888 888 888  888
 //  \_88P  888  "88_/888  "88___/   "88__/ 888  888  "88_-888 888 888  888
 
-let ex_pub_sidechain = rs.stream()
-let ex_pub_sidechain_trigger = rs.stream()
+let ex_sidechain = rs.stream()
+let ex_sidechain_trigger = rs.stream()
 
 // basic sidechain (sidechain vals are ignored and only used for trigger)
-ex_pub_sidechain
-  .subscribe(rs.sidechainPartition(ex_pub_sidechain_trigger))
-  .subscribe(rs.trace("ex_pub_sidechain"))
+ex_sidechain
+  .subscribe(rs.sidechainPartition(ex_sidechain_trigger))
+  .subscribe(rs.trace("ex_sidechain"))
 
-ex_pub_sidechain.next({ hi: "I was first" })
-ex_pub_sidechain.next({ hi: "I was second" })
-ex_pub_sidechain.next({ hi: "I was third" })
+ex_sidechain.next({ hi: "I was first" })
+ex_sidechain.next({ hi: "I was second" })
+ex_sidechain.next({ hi: "I was third" })
 //=> no trace... waiting for trigger
-ex_pub_sidechain.deref() //=> { hi: 'I was third' }
-ex_pub_sidechain_trigger.next(0)
-//=> ex_pub_sidechain [ { hi: 'I was first' }, { hi: 'I was second' }, { hi: 'I was third' } ]
-ex_pub_sidechain_trigger.next(1)
+ex_sidechain.deref() //=> { hi: 'I was third' }
+ex_sidechain_trigger.next(0)
+//=> ex_sidechain [ { hi: 'I was first' }, { hi: 'I was second' }, { hi: 'I was third' } ]
+ex_sidechain_trigger.next(1)
 //=> no trace... no vals from source
-ex_pub_sidechain.next({ hi: "I was forth" })
+ex_sidechain.next({ hi: "I was forth" })
 // => no trace... trigger (1) happened before forth and fifth
-ex_pub_sidechain_trigger.next(2)
-// => ex_pub_sidechain [ { hi: 'I was forth' } ]
+ex_sidechain_trigger.next(2)
+// => ex_sidechain [ { hi: 'I was forth' } ]

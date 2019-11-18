@@ -2,21 +2,24 @@
   "name": "03",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
+  "type": "module",
   "scripts": {
-    "clean": "rm -rf .cache build out",
-    "build": "yarn clean && parcel build index.html -d out --no-source-maps --no-cache --experimental-scope-hoisting --detailed-report --public-url ./",
-    "start": "parcel index.html -p 8080 --open"
+    "clean": "rm -rf .cache build dist",
+    "build": "yarn clean && parcel build src/index.html -d dist --no-source-maps --no-cache --experimental-scope-hoisting --detailed-report --public-url ./",
+    "start": "parcel src/index.html -p 8080 --open"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@thi.ng/csp": "^1.1.6",
+    "@thi.ng/router": "^2.0.6",
     "@thi.ng/rstream": "^2.5.6",
     "@thi.ng/rstream-csp": "^1.0.33",
     "@thi.ng/transducers-hdom": "^2.0.31",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "styled-system-hdom": "^0.1.4"
   },
   "prettier": {
     "arrowParens": "avoid",

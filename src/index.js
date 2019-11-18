@@ -3,16 +3,10 @@ import * as rs from "@thi.ng/rstream"
 import * as xf from "@thi.ng/transducers"
 import { updateDOM } from "@thi.ng/transducers-hdom"
 
-const clickButton = (_, sub) => [
+const clickButton = (ctx, sub) => [
   "button",
   { onclick: () => sub.next(true) }, // STATE ( upstream = I )
-  sub.deref() // STATE ( downstream = O )
-]
-
-const resetButton = (_, streams) => [
-  "button",
-  { onclick: () => streams.forEach(sub => sub.next(false)) },
-  "reset"
+  `count: ${sub.deref()}` // STATE ( downstream = O )
 ]
 
 const stream = (start, step) => {
@@ -30,19 +24,15 @@ const stream = (start, step) => {
 }
 
 const stream_sub1 = stream(0, 1)
-const stream_sub2 = stream(10, 10)
 
-const hdom_stream = [
-  stream_sub1.transform(xf.map(() => [clickButton, stream_sub1])),
-  stream_sub2.transform(xf.map(() => [clickButton, stream_sub2]))
-]
+const hdom_stream = [stream_sub1.transform(xf.map(() => [clickButton, stream_sub1]))]
 
 const app_stream = ctx =>
   rs.sync({
     src: hdom_stream, // <- STATE ( downstream = O )
     xform: xf.map(
       // build the app_stream's actual root component
-      hdom_stream => ["div", ...xf.vals(hdom_stream), [resetButton, [stream_sub1, stream_sub2]]]
+      hdom_stream => ["div", ...xf.vals(hdom_stream)]
     ),
     reset: false
   })
