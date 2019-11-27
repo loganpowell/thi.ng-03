@@ -17,7 +17,9 @@ const stream = (start, step) => {
         () => start,
         (x, y) => (y ? x + step : start)
       )
-    )
+    ),
+    null,
+    "bloop"
   )
   sub.next(false)
   return sub
@@ -32,7 +34,7 @@ const app_stream = ctx =>
     src: hdom_stream, // <- STATE ( downstream = O )
     xform: xf.map(
       // build the app_stream's actual root component
-      hdom_stream => ["div", ...xf.vals(hdom_stream)]
+      hdom_stream => ["div", ...xf.vals(hdom_stream)] //?
     ),
     reset: false
   })

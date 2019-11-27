@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "src/index.js",
-  "type": "module",
+  // "type": "module",
   "scripts": {
     "clean": "rm -rf .cache build dist",
     "build": "yarn clean && parcel build src/index.html -d dist --no-source-maps --no-cache --experimental-scope-hoisting --detailed-report --public-url ./",
